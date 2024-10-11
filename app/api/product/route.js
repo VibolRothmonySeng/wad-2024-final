@@ -10,7 +10,7 @@ export async function POST(request) {
   const product = new Product(body);
   await product.save();
   return Response.json(product);
-}
+} 
 
 export async function PUT(request) {
   const body = await request.json();

@@ -10,26 +10,33 @@ export default function Home() {
   const [category, setCategory] = useState([]);
   const [editMode, setEditMode] = useState(false);
 
-  const startEdit = (product) => async () => {
+  const startEdit = (product) => {
     setEditMode(true);
     reset(product);
   };
 
-  async function fetchProducts() {
-    const data = await fetch(`${APIBASE}/product`);
-    const p = await data.json();
-    const p2 = p.map((product) => {
-      product.id = product._id;
-      return product;
-    });
-    setProducts(p2);
-  }
+  useEffect(() => {
+    // Fetch products and categories inside useEffect to avoid dependency warnings
 
-  async function fetchCategory() {
-    const data = await fetch(`${APIBASE}/category`);
-    const c = await data.json();
-    setCategory(c);
-  }
+    const fetchProducts = async () => {
+      const data = await fetch(`${APIBASE}/product`);
+      const p = await data.json();
+      const p2 = p.map((product) => {
+        product.id = product._id;
+        return product;
+      });
+      setProducts(p2);
+    };
+
+    const fetchCategory = async () => {
+      const data = await fetch(`${APIBASE}/category`);
+      const c = await data.json();
+      setCategory(c);
+    };
+
+    fetchCategory();
+    fetchProducts();
+  }, [APIBASE]); // Ensure APIBASE is included in the dependency array
 
   const createProductOrUpdate = async (data) => {
     if (editMode) {
@@ -53,7 +60,7 @@ export default function Home() {
         category: "",
       });
       setEditMode(false);
-      fetchProducts();
+      fetchProducts(); // Refresh products after update
       return;
     }
 
@@ -70,7 +77,6 @@ export default function Home() {
         throw new Error(`Response status: ${response.status}`);
       }
 
-      // const json = await response.json();
       alert("Product added successfully");
 
       reset({
@@ -80,7 +86,7 @@ export default function Home() {
         price: "",
         category: "",
       });
-      fetchProducts();
+      fetchProducts(); // Refresh products after adding new one
     } catch (error) {
       alert(`Failed to add product: ${error.message}`);
       console.error(error);
@@ -98,18 +104,13 @@ export default function Home() {
       alert(`Failed to delete product: ${response.status}`);
     }
     alert("Product deleted successfully");
-    fetchProducts();
+    fetchProducts(); // Refresh products after deletion
   };
-
-  useEffect(() => {
-    fetchCategory();
-    fetchProducts();
-  }, []);
 
   return (
     <>
       <div className="flex flex-row gap-4">
-        <div className="flex-1 w-64 ">
+        <div className="flex-1 w-64">
           <form onSubmit={handleSubmit(createProductOrUpdate)}>
             <div className="grid grid-cols-2 gap-4 m-4 w-1/2">
               <div>Code:</div>
@@ -141,7 +142,7 @@ export default function Home() {
               <div>Price:</div>
               <div>
                 <input
-                  name="name"
+                  name="price"
                   type="number"
                   {...register("price", { required: true })}
                   className="border border-black w-full"
@@ -178,7 +179,13 @@ export default function Home() {
                 {editMode && (
                   <button
                     onClick={() => {
-                      reset({ code: "", name: "", description: "", price: "", category: "" });
+                      reset({
+                        code: "",
+                        name: "",
+                        description: "",
+                        price: "",
+                        category: "",
+                      });
                       setEditMode(false);
                     }}
                     className="ml-2 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-full"
@@ -195,7 +202,7 @@ export default function Home() {
           <ul className="list-disc ml-8">
             {products.map((p) => (
               <li key={p._id}>
-                <button className="border border-black p-1/2" onClick={startEdit(p)}>
+                <button className="border border-black p-1/2" onClick={() => startEdit(p)}>
                   📝
                 </button>{" "}
                 <button className="border border-black p-1/2" onClick={deleteById(p._id)}>
